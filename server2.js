@@ -6,49 +6,55 @@ import multer from 'multer';
 import Anthropic from '@anthropic-ai/sdk';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { detectEncoding, extractText } from './utils.js';
+import { extractText } from './utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = process.env.PORT || 3000;
+
+// ⚠️ IMPORTANTE para Render
+const PORT = process.env.PORT || 10000;
 
 // ── Anthropic client ──────────────────────────────────────────────────────────
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error('❌ Falta ANTHROPIC_API_KEY en variables de entorno');
+}
 
-// ── Security & middleware ─────────────────────────────────────────────────────
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      connectSrc: ["'self'"],
-      imgSrc: ["'self'", "data:"],
-    },
-  },
-}));
-app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*' }));
-app.use(express.json({ limit: '1mb' }));
-
-// Rate limiting: max 10 analysis requests per 15 min per IP
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { error: 'Demasiadas peticiones. Espera 15 minutos.' },
-  standardHeaders: true,
-  legacyHeaders: false,
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// ── File upload (memory, no disk) ─────────────────────────────────────────────
+// ── Security & middleware ─────────────────────────────────────────────────────
+app.use(helmet());
+
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGIN || '*',
+}));
+
+app.use(express.json({ limit: '1mb' }));
+
+// ⚠️ Trust proxy (Render usa proxy)
+app.set('trust proxy', 1);
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20, // subido un poco para evitar bloqueos en prod
+  message: { error: 'Demasiadas peticiones. Espera 15 minutos.' },
+});
+
+// ── File upload ───────────────────────────────────────────────────────────────
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = ['.txt', '.md', '.text'];
+    const allowed = ['.txt', '.md'];
     const ext = path.extname(file.originalname).toLowerCase();
-    if (allowed.includes(ext) || file.mimetype === 'text/plain') cb(null, true);
-    else cb(new Error('Solo se admiten archivos de texto (.txt, .md)'));
+
+    if (allowed.includes(ext) || file.mimetype === 'text/plain') {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo archivos de texto (.txt, .md)'));
+    }
   },
 });
 
@@ -58,24 +64,27 @@ app.use(express.static(path.join(__dirname, '../public')));
 // ── API: Analyze document ─────────────────────────────────────────────────────
 app.post('/api/analyze', limiter, upload.single('document'), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'No se recibió ningún archivo.' });
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se recibió ningún archivo.' });
+    }
 
-    // Decode text (handle UTF-8 / Latin-1)
     const rawText = extractText(req.file.buffer);
     const trimmed = rawText.trim();
 
-    if (!trimmed) return res.status(400).json({ error: 'El archivo está vacío.' });
-    if (trimmed.length < 50) return res.status(400).json({ error: 'El documento es demasiado corto para analizarlo.' });
+    if (!trimmed) {
+      return res.status(400).json({ error: 'El archivo está vacío.' });
+    }
 
-    // Truncate to ~12 000 chars to stay within token limits
+    if (trimmed.length < 50) {
+      return res.status(400).json({ error: 'El documento es demasiado corto.' });
+    }
+
     const docText = trimmed.slice(0, 12000);
 
-    const systemPrompt = buildSystemPrompt();
-
     const message = await anthropic.messages.create({
-      model: 'claude-opus-4-5',
+      model: 'claude-3-5-sonnet-latest', // ⚠️ modelo válido
       max_tokens: 4096,
-      system: systemPrompt,
+      system: buildSystemPrompt(),
       messages: [
         {
           role: 'user',
@@ -84,29 +93,48 @@ app.post('/api/analyze', limiter, upload.single('document'), async (req, res) =>
       ],
     });
 
-    const rawJson = message.content.map(b => b.text || '').join('');
-    const cleanJson = rawJson.replace(/```json|```/g, '').trim();
+    const rawTextResponse = message.content
+      .map(b => b.text || '')
+      .join('');
+
+    const cleanJson = rawTextResponse
+      .replace(/```json|```/g, '')
+      .trim();
 
     let parsed;
+
     try {
       parsed = JSON.parse(cleanJson);
-    } catch {
-      console.error('JSON parse error. Raw:', rawJson.slice(0, 300));
-      return res.status(500).json({ error: 'La IA devolvió una respuesta inválida. Inténtalo de nuevo.' });
+    } catch (e) {
+      console.error('❌ JSON inválido:', rawTextResponse.slice(0, 300));
+      return res.status(500).json({
+        error: 'La IA devolvió JSON inválido.',
+      });
     }
 
-    return res.json({ success: true, data: parsed });
+    res.json({ success: true, data: parsed });
 
   } catch (err) {
-    console.error('Error en /api/analyze:', err);
-    if (err.status === 429) return res.status(429).json({ error: 'Límite de la API alcanzado. Inténtalo en unos minutos.' });
-    return res.status(500).json({ error: err.message || 'Error interno del servidor.' });
+    console.error('❌ Error en /api/analyze:', err);
+
+    if (err.status === 429) {
+      return res.status(429).json({
+        error: 'Límite de la API alcanzado.',
+      });
+    }
+
+    res.status(500).json({
+      error: err.message || 'Error interno del servidor.',
+    });
   }
 });
 
-// ── API: Health check ─────────────────────────────────────────────────────────
+// ── Health check (Render lo usa) ──────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', version: '1.0.0', timestamp: new Date().toISOString() });
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // ── Fallback SPA ──────────────────────────────────────────────────────────────
@@ -115,8 +143,8 @@ app.get('*', (req, res) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`✅ StudyMind server running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Server running on port ${PORT}`);
 });
 
 // ── Prompt builder ────────────────────────────────────────────────────────────
