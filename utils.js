@@ -1,31 +1,36 @@
 /**
- * Extracts clean UTF-8 text from a Buffer.
- * Tries UTF-8 first; falls back to Latin-1 if needed.
+ * Extracts clean text from a Buffer.
+ * Handles UTF-8, Latin-1, BOM and cleans weird characters.
  */
 export function extractText(buffer) {
-  if (!buffer || buffer.length === 0) return '';
+  if (!buffer) return '';
 
-  // Try UTF-8
-  let text = buffer.toString('utf-8');
+  let text;
 
-  // If replacement chars appear → fallback to latin1
+  // 1. Try UTF-8
+  text = buffer.toString('utf-8');
+
+  // 2. If corrupted characters appear → fallback Latin-1
   if (text.includes('\uFFFD')) {
     text = buffer.toString('latin1');
   }
 
-  // Remove BOM if present
+  // 3. Remove BOM (Byte Order Mark)
   if (text.charCodeAt(0) === 0xFEFF) {
     text = text.slice(1);
   }
 
-  // Normalize line endings
+  // 4. Normalize line breaks
   text = text.replace(/\r\n/g, '\n');
+
+  // 5. Remove weird control characters (except \n and \t)
+  text = text.replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\uFFFF]/g, '');
 
   return text.trim();
 }
 
 /**
- * Rough token estimator (1 token ≈ 4 chars for Spanish text).
+ * Rough token estimator (1 token ≈ 4 chars in Spanish/English)
  */
 export function estimateTokens(text) {
   if (!text) return 0;
