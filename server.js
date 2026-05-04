@@ -134,13 +134,6 @@ app.get('/api/health', (req, res) => {
 });
 
 // ─────────────────────────────
-// SPA
-// ─────────────────────────────
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// ─────────────────────────────
 // START
 // ─────────────────────────────
 app.listen(PORT, () => {
