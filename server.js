@@ -133,6 +133,10 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.get('/', (req, res) => {
+  res.send('IA Minijuegos funcionando 🚀');
+});
+
 // ─────────────────────────────
 // START
 // ─────────────────────────────
