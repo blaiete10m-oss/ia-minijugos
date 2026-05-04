@@ -3,353 +3,154 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import multer from 'multer';
-import Anthropic from '@anthropic-ai/sdk';
+import Groq from 'groq-sdk';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { extractText } from './utils.js';
 
-// ─────────────────────────────────────────────────────────
-// CONFIG
-// ─────────────────────────────────────────────────────────
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// IMPORTANTE: Render usa proxy → esto evita problemas de IP
 app.set('trust proxy', 1);
 
-// ─────────────────────────────────────────────────────────
-// ANTHROPIC
-// ─────────────────────────────────────────────────────────
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+// ─────────────────────────────
+// GROQ
+// ─────────────────────────────
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
 });
 
-// ─────────────────────────────────────────────────────────
+// ─────────────────────────────
 // SECURITY
-// ─────────────────────────────────────────────────────────
+// ─────────────────────────────
 app.use(helmet());
 
-// CORS → en producción mejor restringir
 app.use(cors({
   origin: process.env.ALLOWED_ORIGIN || '*',
 }));
 
 app.use(express.json({ limit: '1mb' }));
 
-// ─────────────────────────────────────────────────────────
-// RATE LIMIT (anti abuso)
-// ─────────────────────────────────────────────────────────
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
+  max: 20,
 });
 
 app.use('/api', limiter);
 
-// ─────────────────────────────────────────────────────────
-// FILE UPLOAD
-// ─────────────────────────────────────────────────────────
+// ─────────────────────────────
+// UPLOAD
+// ─────────────────────────────
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowed = ['.txt', '.md', '.text'];
-    const ext = path.extname(file.originalname).toLowerCase();
-
-    if (allowed.includes(ext) || file.mimetype === 'text/plain') {
-      cb(null, true);
-    } else {
-      cb(new Error('Solo archivos .txt o .md'));
-    }
-  },
 });
 
-// ─────────────────────────────────────────────────────────
-// STATIC FRONTEND
-// ─────────────────────────────────────────────────────────
+// ─────────────────────────────
+// STATIC
+// ─────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ─────────────────────────────────────────────────────────
-// API: ANALYZE
-// ─────────────────────────────────────────────────────────
+// ─────────────────────────────
+// API ANALYZE
+// ─────────────────────────────
 app.post('/api/analyze', upload.single('document'), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: 'No se recibió ningún archivo.' });
+      return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const rawText = extractText(req.file.buffer);
-    const text = rawText.trim();
-
-    if (!text) {
-      return res.status(400).json({ error: 'Archivo vacío.' });
-    }
+    const text = extractText(req.file.buffer).trim();
 
     if (text.length < 50) {
-      return res.status(400).json({ error: 'Texto demasiado corto.' });
+      return res.status(400).json({ error: 'Texto demasiado corto' });
     }
 
     const docText = text.slice(0, 12000);
 
-    const message = await anthropic.messages.create({
-      model: 'claude-opus-4-5',
-      max_tokens: 4096,
-      temperature: 0.2, // 🔥 clave
-      system: buildSystemPrompt(),
+    const completion = await groq.chat.completions.create({
+      model: "compound",
+      temperature: 0.2,
       messages: [
         {
-          role: 'user',
-          content: `Analiza este documento y genera los juegos educativos:\n\n${docText}`,
+          role: "system",
+          content: buildSystemPrompt()
         },
-      ],
+        {
+          role: "user",
+          content: docText
+        }
+      ]
     });
 
-    const raw = message.content.map(b => b.text || '').join('');
+    const raw = completion.choices?.[0]?.message?.content || "";
 
-    const clean = raw
-      .replace(/```json/gi, '')
-      .replace(/```/g, '')
-      .trim();
+    // ── JSON EXTRACTION ROBUSTA ──
+    const start = raw.indexOf('{');
+    const end = raw.lastIndexOf('}');
+    
+    if (start === -1 || end === -1) {
+      return res.status(500).json({
+        error: "Respuesta inválida de la IA"
+      });
+    }
+
+    const jsonString = raw.slice(start, end + 1);
 
     let parsed;
 
     try {
-      parsed = JSON.parse(clean);
+      parsed = JSON.parse(jsonString);
     } catch (err) {
-      console.error('❌ JSON ERROR:', clean.slice(0, 200));
+      console.error("JSON ERROR:", jsonString.slice(0, 300));
       return res.status(500).json({
-        error: 'La IA devolvió JSON inválido',
+        error: "JSON inválido generado por la IA"
       });
     }
 
-    return res.json({
+    res.json({
       success: true,
-      data: parsed,
+      data: parsed
     });
 
   } catch (err) {
-    console.error('🔥 ERROR:', err);
+    console.error(err);
 
-    if (err.status === 429) {
-      return res.status(429).json({
-        error: 'Límite de IA alcanzado',
-      });
-    }
-
-    return res.status(500).json({
-      error: err.message || 'Error interno',
+    res.status(500).json({
+      error: err.message || "Error interno"
     });
   }
 });
 
-// ─────────────────────────────────────────────────────────
-// HEALTH CHECK
-// ─────────────────────────────────────────────────────────
+// ─────────────────────────────
+// HEALTH
+// ─────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({
-    status: 'ok',
-    app: 'ia-minijuegos',
-    time: new Date().toISOString(),
+    status: "ok",
+    app: "ia-minijuegos"
   });
 });
 
-// ─────────────────────────────────────────────────────────
-// SPA FALLBACK
-// ─────────────────────────────────────────────────────────
+// ─────────────────────────────
+// SPA
+// ─────────────────────────────
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// ─────────────────────────────────────────────────────────
+// ─────────────────────────────
 // START
-// ─────────────────────────────────────────────────────────
+// ─────────────────────────────
 app.listen(PORT, () => {
-  console.log(`🚀 IA-MINIJUEGOS corriendo en puerto ${PORT}`);
+  console.log(`🚀 IA-MINIJUEGOS en puerto ${PORT}`);
 });
 
-// ─────────────────────────────────────────────────────────
-// PROMPT (NO TOCAR)
-// ─────────────────────────────────────────────────────────
-function buildSystemPrompt() {
-  return `import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import multer from 'multer';
-import Anthropic from '@anthropic-ai/sdk';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { extractText } from './utils.js';
-
-// ─────────────────────────────────────────────────────────
-// CONFIG
-// ─────────────────────────────────────────────────────────
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// IMPORTANTE: Render usa proxy → esto evita problemas de IP
-app.set('trust proxy', 1);
-
-// ─────────────────────────────────────────────────────────
-// ANTHROPIC
-// ─────────────────────────────────────────────────────────
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
-// ─────────────────────────────────────────────────────────
-// SECURITY
-// ─────────────────────────────────────────────────────────
-app.use(helmet());
-
-// CORS → en producción mejor restringir
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGIN || '*',
-}));
-
-app.use(express.json({ limit: '1mb' }));
-
-// ─────────────────────────────────────────────────────────
-// RATE LIMIT (anti abuso)
-// ─────────────────────────────────────────────────────────
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-app.use('/api', limiter);
-
-// ─────────────────────────────────────────────────────────
-// FILE UPLOAD
-// ─────────────────────────────────────────────────────────
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowed = ['.txt', '.md', '.text'];
-    const ext = path.extname(file.originalname).toLowerCase();
-
-    if (allowed.includes(ext) || file.mimetype === 'text/plain') {
-      cb(null, true);
-    } else {
-      cb(new Error('Solo archivos .txt o .md'));
-    }
-  },
-});
-
-// ─────────────────────────────────────────────────────────
-// STATIC FRONTEND
-// ─────────────────────────────────────────────────────────
-app.use(express.static(path.join(__dirname, 'public')));
-
-// ─────────────────────────────────────────────────────────
-// API: ANALYZE
-// ─────────────────────────────────────────────────────────
-app.post('/api/analyze', upload.single('document'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No se recibió ningún archivo.' });
-    }
-
-    const rawText = extractText(req.file.buffer);
-    const text = rawText.trim();
-
-    if (!text) {
-      return res.status(400).json({ error: 'Archivo vacío.' });
-    }
-
-    if (text.length < 50) {
-      return res.status(400).json({ error: 'Texto demasiado corto.' });
-    }
-
-    const docText = text.slice(0, 12000);
-
-    const message = await anthropic.messages.create({
-      model: 'claude-opus-4-5',
-      max_tokens: 4096,
-      temperature: 0.2, // 🔥 clave
-      system: buildSystemPrompt(),
-      messages: [
-        {
-          role: 'user',
-          content: `Analiza este documento y genera los juegos educativos:\n\n${docText}`,
-        },
-      ],
-    });
-
-    const raw = message.content.map(b => b.text || '').join('');
-
-    const clean = raw
-      .replace(/```json/gi, '')
-      .replace(/```/g, '')
-      .trim();
-
-    let parsed;
-
-    try {
-      parsed = JSON.parse(clean);
-    } catch (err) {
-      console.error('❌ JSON ERROR:', clean.slice(0, 200));
-      return res.status(500).json({
-        error: 'La IA devolvió JSON inválido',
-      });
-    }
-
-    return res.json({
-      success: true,
-      data: parsed,
-    });
-
-  } catch (err) {
-    console.error('🔥 ERROR:', err);
-
-    if (err.status === 429) {
-      return res.status(429).json({
-        error: 'Límite de IA alcanzado',
-      });
-    }
-
-    return res.status(500).json({
-      error: err.message || 'Error interno',
-    });
-  }
-});
-
-// ─────────────────────────────────────────────────────────
-// HEALTH CHECK
-// ─────────────────────────────────────────────────────────
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    app: 'ia-minijuegos',
-    time: new Date().toISOString(),
-  });
-});
-
-// ─────────────────────────────────────────────────────────
-// SPA FALLBACK
-// ─────────────────────────────────────────────────────────
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/index.html'));
-});
-
-// ─────────────────────────────────────────────────────────
-// START
-// ─────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`🚀 IA-MINIJUEGOS corriendo en puerto ${PORT}`);
-});
-
-// ─────────────────────────────────────────────────────────
-// PROMPT (NO TOCAR)
-// ─────────────────────────────────────────────────────────
-function buildSystemPrompt() {
+// ─────────────────────────────
+// PROMPT LIMPIO (ARREGLADO)
+// ─────────────────────────────
+}function buildSystemPrompt() {
   return `Eres un experto pedagogo y diseñador de juegos educativos especializado en el sistema educativo español (primaria, ESO, Bachillerato).
  
 Analiza el documento proporcionado y devuelve ÚNICAMENTE un JSON válido (sin markdown, sin explicaciones previas ni posteriores) con esta estructura exacta:
