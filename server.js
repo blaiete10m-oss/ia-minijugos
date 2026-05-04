@@ -150,7 +150,7 @@ app.listen(PORT, () => {
 // ─────────────────────────────
 // PROMPT LIMPIO (ARREGLADO)
 // ─────────────────────────────
-}function buildSystemPrompt() {
+function buildSystemPrompt() {
   return `Eres un experto pedagogo y diseñador de juegos educativos especializado en el sistema educativo español (primaria, ESO, Bachillerato).
  
 Analiza el documento proporcionado y devuelve ÚNICAMENTE un JSON válido (sin markdown, sin explicaciones previas ni posteriores) con esta estructura exacta:
