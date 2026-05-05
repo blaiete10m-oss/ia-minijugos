@@ -67,7 +67,7 @@ app.post('/api/analyze', upload.single('document'), async (req, res) => {
       return res.status(400).json({ error: 'Texto demasiado corto' });
     }
 
-    const docText = text.slice(0, 12000);
+    const docText = text.slice(0, 6000);
 
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
