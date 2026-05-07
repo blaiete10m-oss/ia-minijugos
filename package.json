@@ -1,7 +1,7 @@
 {
   "name": "ia-minijuegos",
-  "version": "1.0.0",
-  "description": "IA que convierte documentos de texto en minijuegos educativos",
+  "version": "2.0.0",
+  "description": "IA que convierte documentos en minijuegos educativos, resúmenes y esquemas",
   "type": "module",
   "main": "server.js",
   "scripts": {
@@ -17,6 +17,8 @@
     "express-rate-limit": "^7.4.1",
     "helmet": "^8.0.0",
     "multer": "^1.4.5-lts.1",
-    "groq-sdk": "^0.8.0"
+    "groq-sdk": "^0.8.0",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.8.0"
   }
 }
