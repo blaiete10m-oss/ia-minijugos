@@ -1,27 +1,35 @@
-import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 import mammoth from 'mammoth';
+import { createRequire } from 'module';
+
+// pdf-parse necesita require() en ESM — esta es la forma correcta en Render/Node 18+
+const require = createRequire(import.meta.url);
 
 // ─────────────────────────────
 // EXTRACCIÓN DE TEXTO PRINCIPAL
 // Detecta el tipo de archivo y extrae el texto correctamente
 // ─────────────────────────────
 export async function extractText(buffer, mimetype = '') {
-  if (!buffer) return '';
+  if (!buffer || buffer.length === 0) return '';
 
   const mime = mimetype.toLowerCase();
 
-  // PDF
-  if (mime === 'application/pdf' || mime.includes('pdf')) {
+  // PDF — también detectar por magic bytes (%PDF)
+  const isPDF = mime === 'application/pdf' ||
+                mime.includes('pdf') ||
+                buffer.slice(0, 4).toString() === '%PDF';
+
+  if (isPDF) {
     return await extractFromPDF(buffer);
   }
 
-  // DOCX / Word
-  if (
-    mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-    mime === 'application/msword' ||
-    mime.includes('word') ||
-    mime.includes('docx')
-  ) {
+  // DOCX / Word — detectar por magic bytes (PK zip header)
+  const isDOCX = mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                 mime === 'application/msword' ||
+                 mime.includes('word') ||
+                 mime.includes('docx') ||
+                 (buffer[0] === 0x50 && buffer[1] === 0x4B); // PK zip
+
+  if (isDOCX) {
     return await extractFromDOCX(buffer);
   }
 
@@ -33,12 +41,37 @@ export async function extractText(buffer, mimetype = '') {
 // PDF
 // ─────────────────────────────
 async function extractFromPDF(buffer) {
+  // Validar tamaño mínimo — un PDF válido nunca pesa menos de 1KB
+  if (buffer.length < 1000) {
+    throw new Error('El PDF parece estar vacío o corrupto (tamaño demasiado pequeño).');
+  }
+
   try {
-    const data = await pdfParse(buffer);
-    return cleanText(data.text);
+    // Importar con require para evitar el bug de pdf-parse en ESM/Render
+    const pdfParse = require('pdf-parse');
+    const data = await pdfParse(buffer, {
+      // Evitar que pdf-parse intente leer archivos de test locales
+      version: 'v1.10.100'
+    });
+
+    const text = cleanText(data.text);
+
+    if (!text || text.length < 20) {
+      throw new Error('El PDF no contiene texto legible. Puede ser un PDF de imágenes escaneadas.');
+    }
+
+    return text;
   } catch (err) {
     console.error('Error extrayendo PDF:', err.message);
-    throw new Error('No se pudo leer el PDF. Asegúrate de que no esté protegido.');
+
+    // Mensajes de error más claros según el tipo de fallo
+    if (err.message.includes('vacío') || err.message.includes('legible')) {
+      throw err; // Re-lanzar el nuestro
+    }
+    if (err.message.includes('password') || err.message.includes('encrypt')) {
+      throw new Error('El PDF está protegido con contraseña. Usa un PDF sin protección.');
+    }
+    throw new Error(`No se pudo leer el PDF: ${err.message}`);
   }
 }
 
