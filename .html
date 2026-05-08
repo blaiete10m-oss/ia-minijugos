@@ -59,6 +59,22 @@
   h1 .hl { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   .hero-sub { color: var(--muted); font-size: 1rem; max-width: 500px; margin: 0 auto; line-height: 1.65; font-weight: 300; }
 
+  /* ── MODE SELECTOR ── */
+  .mode-selector { display: flex; gap: 12px; margin-bottom: 24px; }
+  .mode-btn {
+    flex: 1; padding: 16px 20px; border-radius: var(--radius);
+    border: 2px solid var(--border); background: rgba(255,255,255,0.02);
+    color: var(--muted); cursor: pointer; text-align: center; transition: all .25s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .mode-btn:hover { border-color: rgba(124,92,252,0.4); color: var(--text); }
+  .mode-btn.active { border-color: var(--accent); background: rgba(124,92,252,0.08); color: var(--text); }
+  .mode-btn .mode-icon { font-size: 1.6rem; display: block; margin-bottom: 6px; }
+  .mode-btn .mode-label { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.88rem; display: block; margin-bottom: 3px; }
+  .mode-btn .mode-desc { font-size: 0.76rem; color: var(--muted); line-height: 1.4; }
+  .mode-btn.active .mode-desc { color: rgba(240,238,255,0.6); }
+  @media(max-width:560px){ .mode-selector { flex-direction: column; } }
+
   /* ── UPLOAD ── */
   .drop-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 52px 32px; text-align: center; cursor: pointer; transition: all .3s; background: rgba(255,255,255,0.01); position: relative; overflow: hidden; }
   .drop-zone::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at center,rgba(124,92,252,0.06) 0%,transparent 70%); opacity:0; transition:opacity .3s; }
@@ -103,6 +119,15 @@
   .results-section { display:none; }
   .results-section.show { display:block; }
 
+  /* ── RESULT TABS ── */
+  .result-tabs { display:flex; gap:4px; margin-bottom:28px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:4px; }
+  .rtab { flex:1; padding:10px 16px; border-radius:9px; border:none; background:none; color:var(--muted); font-family:'DM Sans',sans-serif; font-size:0.88rem; cursor:pointer; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:7px; font-weight:500; }
+  .rtab:hover { color:var(--text); }
+  .rtab.active { background:rgba(124,92,252,0.14); color:var(--accent); border:1px solid rgba(124,92,252,0.3); }
+  .rtab-panel { display:none; }
+  .rtab-panel.active { display:block; }
+
+  /* ── SUMMARY CARD (existing) ── */
   .summary-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:30px;margin-bottom:36px;position:relative;overflow:hidden; }
   .summary-card::before { content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent3)); }
   .subject-badge { display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:100px;font-size:0.78rem;font-weight:600;margin-bottom:18px;text-transform:uppercase;letter-spacing:.06em; }
@@ -131,6 +156,94 @@
   .game-tag { display:inline-block;padding:4px 10px;border-radius:100px;font-size:0.73rem;font-weight:600;background:rgba(255,255,255,0.05);color:var(--muted); }
   .play-btn { display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:500;cursor:pointer;transition:all .2s;margin-top:14px; }
   .play-btn:hover { background:rgba(124,92,252,0.1);border-color:var(--accent);color:var(--accent); }
+
+  /* ══════════════════════════════════════════════════════
+     NUEVO — RESÚMENES Y ESQUEMAS
+  ══════════════════════════════════════════════════════ */
+
+  /* Loading inline para resúmenes */
+  .sum-loading { text-align:center; padding:64px 32px; display:none; }
+  .sum-loading.show { display:block; }
+  .sum-loader { width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent2);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 18px; }
+  .sum-loading p { color:var(--muted);font-size:0.9rem; }
+
+  /* Contenido de resúmenes */
+  #sumContent { display:none; }
+  #sumContent.show { display:block; }
+
+  /* Resumen texto */
+  .sum-section { margin-bottom:32px; }
+  .sum-section-title { font-family:'Syne',sans-serif;font-weight:800;font-size:0.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:8px; }
+  .sum-section-title::after { content:'';flex:1;height:1px;background:var(--border); }
+
+  /* Toggle resumen corto/largo */
+  .sum-toggle { display:flex;gap:6px;margin-bottom:16px; }
+  .stog-btn { padding:6px 16px;border-radius:100px;font-size:0.8rem;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif; }
+  .stog-btn.active { border-color:var(--accent2);color:var(--accent2);background:rgba(252,92,125,0.08); }
+
+  .sum-text-box { background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;font-size:0.93rem;line-height:1.75;color:#d8d8f0; }
+  .sum-text-box.hidden { display:none; }
+
+  /* Términos clave */
+  .terms-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px; }
+  .term-card { background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;transition:border-color .2s; }
+  .term-card:hover { border-color:rgba(124,92,252,0.4); }
+  .term-word { font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;color:var(--accent);margin-bottom:5px; }
+  .term-def { font-size:0.8rem;color:var(--muted);line-height:1.45; }
+
+  /* Esquema */
+  .outline-container { display:flex;flex-direction:column;gap:12px; }
+  .outline-section { background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden; }
+  .outline-sec-header { display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;transition:background .2s; }
+  .outline-sec-header:hover { background:rgba(255,255,255,0.02); }
+  .outline-sec-emoji { font-size:1.3rem;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+  .outline-sec-title { font-family:'Syne',sans-serif;font-weight:700;font-size:0.97rem;flex:1; }
+  .outline-chevron { color:var(--muted);transition:transform .3s;font-size:0.8rem; }
+  .outline-section.open .outline-chevron { transform:rotate(90deg); }
+  .outline-sec-body { display:none;padding:0 20px 18px; }
+  .outline-section.open .outline-sec-body { display:block; }
+  .outline-sec-content { font-size:0.85rem;color:var(--muted);line-height:1.6;margin-bottom:14px; }
+  .outline-subsection { margin-bottom:12px; }
+  .outline-sub-title { font-weight:600;font-size:0.85rem;color:var(--text);margin-bottom:7px;display:flex;align-items:center;gap:6px; }
+  .outline-sub-title::before { content:''; width:10px;height:2px;background:var(--accent);border-radius:2px;display:inline-block; }
+  .outline-point { display:flex;align-items:flex-start;gap:8px;font-size:0.82rem;color:#a8a8c8;line-height:1.5;margin-bottom:5px;padding-left:16px; }
+  .outline-point::before { content:'·';color:var(--accent3);flex-shrink:0; }
+
+  /* Mapa mental */
+  .mindmap-wrap { background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;overflow-x:auto; }
+  .mindmap-center { text-align:center;margin-bottom:28px; }
+  .mm-center-node { display:inline-block;padding:12px 28px;border-radius:100px;font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;box-shadow:0 8px 24px rgba(124,92,252,0.3); }
+  .mm-branches { display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px; }
+  .mm-branch { border-radius:12px;padding:16px;border:1px solid var(--border);transition:all .2s;position:relative;overflow:hidden; }
+  .mm-branch::before { content:'';position:absolute;top:0;left:0;bottom:0;width:3px; }
+  .mm-branch:hover { transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.2); }
+  .mm-branch-label { font-family:'Syne',sans-serif;font-weight:700;font-size:0.88rem;margin-bottom:10px; }
+  .mm-child { font-size:0.79rem;color:var(--muted);padding:4px 0 4px 12px;border-left:1px solid var(--border);margin-bottom:4px;line-height:1.4; }
+
+  /* Timeline */
+  .timeline-wrap { position:relative;padding-left:28px; }
+  .timeline-wrap::before { content:'';position:absolute;left:8px;top:8px;bottom:8px;width:2px;background:linear-gradient(to bottom,var(--accent),var(--accent2),transparent);border-radius:2px; }
+  .tl-event { position:relative;margin-bottom:20px; }
+  .tl-dot { position:absolute;left:-24px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--card);border:2px solid var(--accent);transition:all .2s; }
+  .tl-event:hover .tl-dot { background:var(--accent);box-shadow:0 0 10px rgba(124,92,252,0.5); }
+  .tl-event[data-importance="high"] .tl-dot { border-color:var(--accent2);width:14px;height:14px;left:-25px; }
+  .tl-event[data-importance="high"]:hover .tl-dot { background:var(--accent2); }
+  .tl-date { font-family:'Syne',sans-serif;font-weight:700;font-size:0.78rem;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px; }
+  .tl-event[data-importance="high"] .tl-date { color:var(--accent2); }
+  .tl-text { font-size:0.87rem;color:#c0c0e0;line-height:1.5; }
+
+  /* Tips de examen */
+  .tips-grid { display:flex;flex-direction:column;gap:10px; }
+  .tip-card { display:flex;align-items:flex-start;gap:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px; }
+  .tip-num { width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent4),#ff9f45);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:0.78rem;color:#0a0a0f;flex-shrink:0; }
+  .tip-text { font-size:0.87rem;color:#c8c8e8;line-height:1.55; }
+
+  /* Sin datos */
+  .empty-state { text-align:center;padding:56px 32px;color:var(--muted); }
+  .empty-icon { font-size:2.5rem;margin-bottom:12px; }
+  .empty-title { font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;margin-bottom:8px;color:var(--text); }
+
+  /* ══ FIN NUEVAS SECCIONES ══ */
 
   /* ── MODAL ── */
   .game-modal { display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.82);backdrop-filter:blur(10px);overflow-y:auto; }
@@ -252,23 +365,43 @@
 
   <!-- HERO -->
   <div class="hero">
-    <div class="hero-tag">✦ Powered by Claude AI</div>
-    <h1>Convierte tus apuntes en<br><span class="hl">juegos de estudio</span></h1>
-    <p class="hero-sub">Sube cualquier documento de texto y la IA generará minijuegos visuales adaptados a tu asignatura.</p>
+    <div class="hero-tag">✦ Powered by Groq AI</div>
+    <h1>Convierte tus apuntes en<br><span class="hl">material de estudio</span></h1>
+    <p class="hero-sub">Sube cualquier documento y la IA generará minijuegos, resúmenes y esquemas adaptados a tu asignatura.</p>
   </div>
 
   <!-- UPLOAD -->
   <div id="uploadSection">
+
+    <!-- SELECTOR DE MODO -->
+    <div class="mode-selector">
+      <button class="mode-btn active" id="modeGames" onclick="setMode('games')">
+        <span class="mode-icon">🎮</span>
+        <span class="mode-label">Minijuegos</span>
+        <span class="mode-desc">Flashcards, ordenar, rellenar huecos y más actividades interactivas</span>
+      </button>
+      <button class="mode-btn" id="modeSummary" onclick="setMode('summary')">
+        <span class="mode-icon">📋</span>
+        <span class="mode-label">Resúmenes y esquemas</span>
+        <span class="mode-desc">Resumen, esquema, mapa mental, timeline y consejos de examen</span>
+      </button>
+      <button class="mode-btn" id="modeBoth" onclick="setMode('both')">
+        <span class="mode-icon">⚡</span>
+        <span class="mode-label">Todo a la vez</span>
+        <span class="mode-desc">Genera los juegos y el resumen completo en paralelo</span>
+      </button>
+    </div>
+
     <div class="drop-zone" id="dropZone">
       <span class="drop-icon">📄</span>
       <div class="drop-title">Arrastra tus apuntes aquí</div>
-      <div class="drop-sub">Archivos .txt o .md · Máximo 5 MB</div>
+      <div class="drop-sub">Archivos .txt, .pdf o .docx · Máximo 10 MB</div>
       <button class="drop-btn" onclick="document.getElementById('fileInput').click()">Seleccionar archivo</button>
-      <input type="file" id="fileInput" accept=".txt,.md,.text">
+      <input type="file" id="fileInput" accept=".txt,.md,.text,.pdf,.doc,.docx">
     </div>
 
     <div class="file-preview" id="filePreview">
-      <div class="file-icon-box">📝</div>
+      <div class="file-icon-box" id="fileIconBox">📝</div>
       <div class="file-info">
         <div class="file-name" id="fileName">—</div>
         <div class="file-size" id="fileSize">—</div>
@@ -278,15 +411,15 @@
 
     <div class="error-banner" id="errorBanner"></div>
 
-    <button class="analyze-btn" id="analyzeBtn">✦ Analizar y generar minijuegos</button>
+    <button class="analyze-btn" id="analyzeBtn">✦ Generar</button>
   </div>
 
   <!-- LOADING -->
   <div class="loading-section" id="loadingSection">
     <div class="loader-ring"></div>
-    <div class="loading-text">Analizando tu documento…</div>
-    <div class="loading-sub">La IA está leyendo el contenido y generando actividades personalizadas</div>
-    <div class="loading-steps">
+    <div class="loading-text" id="loadingText">Analizando tu documento…</div>
+    <div class="loading-sub">La IA está leyendo el contenido y generando material personalizado</div>
+    <div class="loading-steps" id="loadingSteps">
       <div class="step-chip" id="s1">📖 Leyendo</div>
       <div class="step-chip" id="s2">🧠 Extrayendo ideas</div>
       <div class="step-chip" id="s3">🎮 Creando juegos</div>
@@ -297,32 +430,100 @@
   <!-- RESULTS -->
   <div class="results-section" id="resultsSection">
 
-    <div class="summary-card">
-      <div class="subject-badge" id="subjectBadge"></div>
-      <div class="summary-title" id="summaryTitle"></div>
-      <div class="summary-desc" id="summaryDesc"></div>
-      <div class="summary-grid">
-        <div class="summary-block">
-          <h4>Ideas principales</h4>
-          <div id="ideasContainer"></div>
-        </div>
-        <div class="summary-block">
-          <h4>Puntos clave</h4>
-          <div id="keyPointsContainer"></div>
-        </div>
-      </div>
+    <!-- TABS (solo en modo "both") -->
+    <div class="result-tabs" id="resultTabs" style="display:none">
+      <button class="rtab active" id="tabGames" onclick="switchTab('games')">🎮 Minijuegos</button>
+      <button class="rtab" id="tabSummary" onclick="switchTab('summary')">📋 Resúmenes y esquemas</button>
     </div>
 
-    <div class="games-header">
-      <div class="games-title">Minijuegos generados</div>
-      <div class="games-count" id="gamesCount"></div>
+    <!-- PANEL: MINIJUEGOS -->
+    <div class="rtab-panel active" id="panelGames">
+      <div class="summary-card" id="summaryCard">
+        <div class="subject-badge" id="subjectBadge"></div>
+        <div class="summary-title" id="summaryTitle"></div>
+        <div class="summary-desc" id="summaryDesc"></div>
+        <div class="summary-grid">
+          <div class="summary-block">
+            <h4>Ideas principales</h4>
+            <div id="ideasContainer"></div>
+          </div>
+          <div class="summary-block">
+            <h4>Puntos clave</h4>
+            <div id="keyPointsContainer"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="games-header">
+        <div class="games-title">Minijuegos generados</div>
+        <div class="games-count" id="gamesCount"></div>
+      </div>
+      <div class="games-grid" id="gamesGrid"></div>
     </div>
-    <div class="games-grid" id="gamesGrid"></div>
+
+    <!-- PANEL: RESÚMENES Y ESQUEMAS -->
+    <div class="rtab-panel" id="panelSummary">
+
+      <!-- Loading inline -->
+      <div class="sum-loading" id="sumLoading">
+        <div class="sum-loader"></div>
+        <p>Generando resúmenes y esquemas…</p>
+      </div>
+
+      <!-- Contenido -->
+      <div id="sumContent">
+
+        <!-- 1. RESUMEN TEXTUAL -->
+        <div class="sum-section">
+          <div class="sum-section-title">📝 Resumen</div>
+          <div class="sum-toggle">
+            <button class="stog-btn active" id="btnShort" onclick="toggleSummary('short')">Versión corta</button>
+            <button class="stog-btn" id="btnMedium" onclick="toggleSummary('medium')">Versión completa</button>
+          </div>
+          <div class="sum-text-box" id="sumShort"></div>
+          <div class="sum-text-box hidden" id="sumMedium"></div>
+        </div>
+
+        <!-- 2. TÉRMINOS CLAVE -->
+        <div class="sum-section">
+          <div class="sum-section-title">🔑 Términos clave</div>
+          <div class="terms-grid" id="termsGrid"></div>
+        </div>
+
+        <!-- 3. ESQUEMA -->
+        <div class="sum-section">
+          <div class="sum-section-title">📐 Esquema del tema</div>
+          <div class="outline-container" id="outlineContainer"></div>
+        </div>
+
+        <!-- 4. MAPA MENTAL -->
+        <div class="sum-section">
+          <div class="sum-section-title">🧠 Mapa mental</div>
+          <div class="mindmap-wrap">
+            <div class="mindmap-center"><div class="mm-center-node" id="mmCenter"></div></div>
+            <div class="mm-branches" id="mmBranches"></div>
+          </div>
+        </div>
+
+        <!-- 5. TIMELINE (condicional) -->
+        <div class="sum-section" id="tlSection" style="display:none">
+          <div class="sum-section-title">📅 Línea del tiempo</div>
+          <div class="timeline-wrap" id="tlContainer"></div>
+        </div>
+
+        <!-- 6. TIPS DE EXAMEN -->
+        <div class="sum-section">
+          <div class="sum-section-title">💡 Consejos para el examen</div>
+          <div class="tips-grid" id="tipsGrid"></div>
+        </div>
+
+      </div><!-- /sumContent -->
+    </div><!-- /panelSummary -->
 
     <div style="text-align:center;margin-top:40px;">
       <button class="reset-btn" id="newDocBtn" style="padding:12px 28px;font-size:0.9rem;">← Analizar otro documento</button>
     </div>
-  </div>
+  </div><!-- /resultsSection -->
 
 </main>
 </div>
@@ -347,18 +548,39 @@
 // ══════════════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════════════
-let currentFile = null;
+let currentFile  = null;
 let analysisData = null;
+let summaryData  = null;
 let activeGames  = [];
+let currentMode  = 'games'; // 'games' | 'summary' | 'both'
+
+const API_BASE = ''; // mismo origen — cambia a tu URL de Render si es distinto
+
+// ══════════════════════════════════════════════════════
+// MODE SELECTOR
+// ══════════════════════════════════════════════════════
+function setMode(mode) {
+  currentMode = mode;
+  ['games','summary','both'].forEach(m => {
+    document.getElementById('mode' + m.charAt(0).toUpperCase() + m.slice(1))
+      .classList.toggle('active', m === mode);
+  });
+  const labels = {
+    games:   '✦ Generar minijuegos',
+    summary: '✦ Generar resumen y esquema',
+    both:    '✦ Generar todo',
+  };
+  document.getElementById('analyzeBtn').textContent = labels[mode];
+}
 
 // ══════════════════════════════════════════════════════
 // FILE HANDLING
 // ══════════════════════════════════════════════════════
-const dropZone   = document.getElementById('dropZone');
-const fileInput  = document.getElementById('fileInput');
-const filePreview= document.getElementById('filePreview');
-const analyzeBtn = document.getElementById('analyzeBtn');
-const errorBanner= document.getElementById('errorBanner');
+const dropZone    = document.getElementById('dropZone');
+const fileInput   = document.getElementById('fileInput');
+const filePreview = document.getElementById('filePreview');
+const analyzeBtn  = document.getElementById('analyzeBtn');
+const errorBanner = document.getElementById('errorBanner');
 
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
@@ -376,16 +598,17 @@ document.getElementById('newDocBtn').addEventListener('click', () => {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
+const FILE_ICONS = { pdf:'📕', doc:'📘', docx:'📘', txt:'📝', md:'📝' };
+
 function handleFile(f) {
-  const allowed = ['.txt','.md','.text'];
-  const ext = f.name.slice(f.name.lastIndexOf('.')).toLowerCase();
-  if (!allowed.includes(ext) && f.type !== 'text/plain') {
-    showError('Solo se admiten archivos .txt o .md'); return;
-  }
-  if (f.size > 5 * 1024 * 1024) { showError('El archivo supera los 5 MB.'); return; }
+  const ext = f.name.slice(f.name.lastIndexOf('.')+1).toLowerCase();
+  const allowed = ['txt','md','text','pdf','doc','docx'];
+  if (!allowed.includes(ext)) { showError('Formato no soportado. Usa .txt, .pdf o .docx'); return; }
+  if (f.size > 10 * 1024 * 1024) { showError('El archivo supera los 10 MB.'); return; }
   currentFile = f;
   document.getElementById('fileName').textContent = f.name;
-  document.getElementById('fileSize').textContent = fmtSize(f.size);
+  document.getElementById('fileSize').textContent  = fmtSize(f.size);
+  document.getElementById('fileIconBox').textContent = FILE_ICONS[ext] || '📄';
   filePreview.classList.add('show');
   analyzeBtn.classList.add('show');
   hideError();
@@ -408,7 +631,7 @@ function showError(msg) { errorBanner.textContent = '⚠ ' + msg; errorBanner.cl
 function hideError() { errorBanner.classList.remove('show'); }
 
 // ══════════════════════════════════════════════════════
-// ANALYZE — calls our own Express backend
+// ANALYZE
 // ══════════════════════════════════════════════════════
 analyzeBtn.addEventListener('click', startAnalysis);
 
@@ -418,21 +641,36 @@ async function startAnalysis() {
   analyzeBtn.disabled = true;
   document.getElementById('uploadSection').style.display = 'none';
   document.getElementById('loadingSection').classList.add('show');
+
+  // Adaptar pasos según el modo
+  updateLoadingSteps(currentMode);
   animateSteps();
 
   try {
-    const fd = new FormData();
-    fd.append('document', currentFile);
+    if (currentMode === 'games') {
+      const data = await callAPI('/api/analyze');
+      analysisData = data;
+      renderGames(data);
+      showResultsPanel('games');
 
-    const res = await fetch('/api/analyze', { method: 'POST', body: fd });
-    const json = await res.json();
+    } else if (currentMode === 'summary') {
+      const data = await callAPI('/api/summarize');
+      summaryData = data;
+      renderSummaryPanel(data);
+      showResultsPanel('summary');
 
-    if (!res.ok || !json.success) {
-      throw new Error(json.error || `Error ${res.status}`);
+    } else {
+      // BOTH — llamadas en paralelo
+      const [gData, sData] = await Promise.all([
+        callAPI('/api/analyze'),
+        callAPI('/api/summarize'),
+      ]);
+      analysisData = gData;
+      summaryData  = sData;
+      renderGames(gData);
+      renderSummaryPanel(sData);
+      showResultsPanel('both');
     }
-
-    analysisData = json.data;
-    renderResults(json.data);
 
   } catch (err) {
     console.error(err);
@@ -445,24 +683,75 @@ async function startAnalysis() {
   }
 }
 
+async function callAPI(endpoint) {
+  const fd = new FormData();
+  fd.append('document', currentFile);
+  const res  = await fetch(API_BASE + endpoint, { method: 'POST', body: fd });
+  const json = await res.json();
+  if (!res.ok || !json.success) throw new Error(json.error || `Error ${res.status}`);
+  return json.data;
+}
+
+function updateLoadingSteps(mode) {
+  const stepsEl = document.getElementById('loadingSteps');
+  const stepsMap = {
+    games:   ['📖 Leyendo','🧠 Extrayendo ideas','🎮 Creando juegos','✓ Listo'],
+    summary: ['📖 Leyendo','🧠 Analizando','📋 Generando resumen','✓ Listo'],
+    both:    ['📖 Leyendo','🧠 Analizando','🎮 Juegos + 📋 Resumen','✓ Listo'],
+  };
+  const steps = stepsMap[mode];
+  stepsEl.innerHTML = steps.map((s,i) => `<div class="step-chip" id="s${i+1}">${s}</div>`).join('');
+}
+
 function animateSteps() {
   const ids = ['s1','s2','s3','s4'];
-  ids.forEach(id => document.getElementById(id).className = 'step-chip');
+  ids.forEach(id => { const el = document.getElementById(id); if(el) el.className = 'step-chip'; });
   ids.forEach((id, i) => {
     setTimeout(() => {
-      if (i > 0) document.getElementById(ids[i-1]).className = 'step-chip done';
-      document.getElementById(id).className = 'step-chip active';
-    }, i * 1800);
+      if (i > 0) { const prev = document.getElementById(ids[i-1]); if(prev) prev.className = 'step-chip done'; }
+      const cur = document.getElementById(id); if(cur) cur.className = 'step-chip active';
+    }, i * 1600);
   });
 }
 
 // ══════════════════════════════════════════════════════
-// RENDER RESULTS
+// SHOW RESULTS PANEL
 // ══════════════════════════════════════════════════════
-function renderResults(data) {
+function showResultsPanel(mode) {
+  const tabs = document.getElementById('resultTabs');
+  const pGames   = document.getElementById('panelGames');
+  const pSummary = document.getElementById('panelSummary');
+
+  if (mode === 'both') {
+    tabs.style.display = 'flex';
+    switchTab('games');
+  } else if (mode === 'games') {
+    tabs.style.display = 'none';
+    pGames.classList.add('active');
+    pSummary.classList.remove('active');
+  } else {
+    tabs.style.display = 'none';
+    pSummary.classList.add('active');
+    pGames.classList.remove('active');
+  }
+
+  document.getElementById('resultsSection').classList.add('show');
+  document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+function switchTab(tab) {
+  document.getElementById('tabGames').classList.toggle('active', tab === 'games');
+  document.getElementById('tabSummary').classList.toggle('active', tab === 'summary');
+  document.getElementById('panelGames').classList.toggle('active', tab === 'games');
+  document.getElementById('panelSummary').classList.toggle('active', tab === 'summary');
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER — MINIJUEGOS (igual que antes)
+// ══════════════════════════════════════════════════════
+function renderGames(data) {
   const color = data.subjectColor || '#7c5cfc';
 
-  // Badge
   const badge = document.getElementById('subjectBadge');
   badge.textContent = `${data.subjectEmoji} ${data.subject}`;
   badge.style.background = hex2rgba(color, 0.11);
@@ -478,9 +767,8 @@ function renderResults(data) {
   document.getElementById('keyPointsContainer').innerHTML =
     (data.keyPoints||[]).map(p => `<div class="key-point">${p}</div>`).join('');
 
-  // Games
   activeGames = data.games || [];
-  const grid = document.getElementById('gamesGrid');
+  const grid  = document.getElementById('gamesGrid');
   grid.innerHTML = '';
   document.getElementById('gamesCount').textContent = `${activeGames.length} actividades`;
 
@@ -497,13 +785,114 @@ function renderResults(data) {
     `;
     grid.appendChild(card);
   });
-
-  document.getElementById('resultsSection').classList.add('show');
-  document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
 }
 
 function typeLabel(t) {
   return { flashcards:'Tarjetas', ordering:'Ordenar', fill_blank:'Rellenar huecos', word_sort:'Ordenar palabras', memory:'Memoria', concept_map:'Mapa conceptual' }[t] || t;
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER — RESÚMENES Y ESQUEMAS (NUEVO)
+// ══════════════════════════════════════════════════════
+function renderSummaryPanel(data) {
+  document.getElementById('sumLoading').classList.remove('show');
+  document.getElementById('sumContent').classList.add('show');
+
+  // 1. RESUMEN TEXTO
+  document.getElementById('sumShort').textContent  = data.summary?.short  || '—';
+  document.getElementById('sumMedium').textContent = data.summary?.medium || '—';
+
+  // 2. TÉRMINOS CLAVE
+  const terms = data.summary?.keyTerms || [];
+  document.getElementById('termsGrid').innerHTML = terms.map(t => `
+    <div class="term-card">
+      <div class="term-word">${t.term}</div>
+      <div class="term-def">${t.definition}</div>
+    </div>
+  `).join('');
+
+  // 3. ESQUEMA
+  const sections = data.outline?.sections || [];
+  const sectionColors = ['#7c5cfc','#fc5c7d','#5cf7c4','#fcb45c','#0077b6','#2d6a4f'];
+  document.getElementById('outlineContainer').innerHTML = sections.map((sec, si) => {
+    const col = sec.color || sectionColors[si % sectionColors.length];
+    const subsHtml = (sec.subsections || []).map(sub => `
+      <div class="outline-subsection">
+        <div class="outline-sub-title">${sub.title}</div>
+        ${(sub.points||[]).map(p => `<div class="outline-point">${p}</div>`).join('')}
+      </div>
+    `).join('');
+    return `
+      <div class="outline-section" id="osec${si}">
+        <div class="outline-sec-header" onclick="toggleOutline(${si})">
+          <div class="outline-sec-emoji" style="background:${hex2rgba(col,0.15)}">${sec.emoji||'📌'}</div>
+          <div class="outline-sec-title">${sec.title}</div>
+          <span class="outline-chevron">▶</span>
+        </div>
+        <div class="outline-sec-body">
+          ${sec.content ? `<div class="outline-sec-content">${sec.content}</div>` : ''}
+          ${subsHtml}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // 4. MAPA MENTAL
+  document.getElementById('mmCenter').textContent = data.mindmap?.center || data.title || '—';
+  const branches = data.mindmap?.branches || [];
+  const branchColors = ['#7c5cfc','#fc5c7d','#5cf7c4','#fcb45c','#0077b6','#f77f00','#2d6a4f'];
+  document.getElementById('mmBranches').innerHTML = branches.map((b, bi) => {
+    const col = b.color || branchColors[bi % branchColors.length];
+    return `
+      <div class="mm-branch" style="background:${hex2rgba(col,0.07)};border-color:${hex2rgba(col,0.3)}">
+        <div class="mm-branch::before" style="background:${col}"></div>
+        <div class="mm-branch-label" style="color:${col}">${b.label}</div>
+        ${(b.children||[]).map(c => `<div class="mm-child">${c}</div>`).join('')}
+      </div>
+    `;
+  }).join('');
+
+  // Aplicar el borde lateral con JS (::before no se puede aplicar inline)
+  document.querySelectorAll('.mm-branch').forEach((el, i) => {
+    const col = branches[i]?.color || branchColors[i % branchColors.length];
+    el.style.borderLeft = `3px solid ${col}`;
+  });
+
+  // 5. TIMELINE
+  const tl = data.timeline;
+  if (tl?.applicable && tl.events?.length) {
+    document.getElementById('tlSection').style.display = '';
+    document.getElementById('tlContainer').innerHTML = tl.events.map(ev => `
+      <div class="tl-event" data-importance="${ev.importance||'medium'}">
+        <div class="tl-dot"></div>
+        <div class="tl-date">${ev.date}</div>
+        <div class="tl-text">${ev.event}</div>
+      </div>
+    `).join('');
+  } else {
+    document.getElementById('tlSection').style.display = 'none';
+  }
+
+  // 6. TIPS DE EXAMEN
+  const tips = data.examTips || [];
+  document.getElementById('tipsGrid').innerHTML = tips.map((tip, i) => `
+    <div class="tip-card">
+      <div class="tip-num">${i+1}</div>
+      <div class="tip-text">${tip}</div>
+    </div>
+  `).join('');
+}
+
+function toggleOutline(i) {
+  const el = document.getElementById('osec' + i);
+  el.classList.toggle('open');
+}
+
+function toggleSummary(version) {
+  document.getElementById('sumShort').classList.toggle('hidden', version !== 'short');
+  document.getElementById('sumMedium').classList.toggle('hidden', version !== 'medium');
+  document.getElementById('btnShort').classList.toggle('active', version === 'short');
+  document.getElementById('btnMedium').classList.toggle('active', version === 'medium');
 }
 
 // ══════════════════════════════════════════════════════
@@ -797,7 +1186,6 @@ function renderMemory(el, data) {
     if (locked || flipped.some(f=>f.i===i) || matched.includes(card.id)) return;
     el.classList.add('flipped');
     flipped.push({ el, card, i });
-
     if (flipped.length === 2) {
       locked = true; moves++;
       document.getElementById('mem-m').textContent = moves;
@@ -805,13 +1193,11 @@ function renderMemory(el, data) {
       if (a.card.id === b.card.id && a.card.type !== b.card.type) {
         matched.push(a.card.id);
         a.el.classList.add('matched'); b.el.classList.add('matched');
-        a.el.querySelectorAll('.mem-face').forEach(f => { f.style.borderColor='var(--accent3)'; });
-        b.el.querySelectorAll('.mem-face').forEach(f => { f.style.borderColor='var(--accent3)'; });
         flipped = []; locked = false;
         if (matched.length === pairs.length) {
           const fb = document.getElementById('mem-fb');
           fb.className = 'feedback-msg show correct';
-          fb.textContent = `🎉 ¡Has completado el juego de memoria en ${moves} movimientos!`;
+          fb.textContent = `🎉 ¡Completado en ${moves} movimientos!`;
         }
       } else {
         setTimeout(() => {
@@ -841,7 +1227,6 @@ function renderConceptMap(el, data) {
   svg.setAttribute('viewBox','0 0 100 100');
   svg.setAttribute('preserveAspectRatio','xMidYMid meet');
 
-  // Defs for arrow
   const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
   const marker = document.createElementNS('http://www.w3.org/2000/svg','marker');
   marker.setAttribute('id','arrow'); marker.setAttribute('markerWidth','6'); marker.setAttribute('markerHeight','6');
@@ -850,7 +1235,6 @@ function renderConceptMap(el, data) {
   poly.setAttribute('points','0 0, 6 3, 0 6'); poly.setAttribute('fill','#3a3a5a');
   marker.appendChild(poly); defs.appendChild(marker); svg.appendChild(defs);
 
-  // Edges
   edges.forEach(e => {
     const fn = nodes.find(n=>n.id===e.from), tn = nodes.find(n=>n.id===e.to);
     if (!fn||!tn) return;
@@ -860,7 +1244,6 @@ function renderConceptMap(el, data) {
     line.setAttribute('stroke','#2a2a3d'); line.setAttribute('stroke-width','0.7');
     line.setAttribute('marker-end','url(#arrow)');
     svg.appendChild(line);
-
     if (e.label) {
       const tx = document.createElementNS('http://www.w3.org/2000/svg','text');
       tx.setAttribute('x',(fn.x+tn.x)/2); tx.setAttribute('y',(fn.y+tn.y)/2-1);
@@ -870,27 +1253,22 @@ function renderConceptMap(el, data) {
     }
   });
 
-  // Nodes
   nodes.forEach(n => {
     const color = n.color || '#7c5cfc';
     const g = document.createElementNS('http://www.w3.org/2000/svg','g');
     g.style.cursor = 'pointer';
-
     const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
     circle.setAttribute('cx',n.x); circle.setAttribute('cy',n.y); circle.setAttribute('r','7.5');
     circle.setAttribute('fill', hex2rgba(color,0.18));
     circle.setAttribute('stroke',color); circle.setAttribute('stroke-width','1');
     circle.style.transition = 'all .2s';
-
     const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
     txt.setAttribute('x',n.x); txt.setAttribute('y',n.y+1);
     txt.setAttribute('text-anchor','middle'); txt.setAttribute('dominant-baseline','middle');
     txt.setAttribute('font-size','3.2'); txt.setAttribute('fill','#f0eeff'); txt.setAttribute('font-weight','600');
     txt.textContent = n.label.length > 13 ? n.label.slice(0,12)+'…' : n.label;
-
     g.appendChild(circle); g.appendChild(txt);
     g.onclick = () => {
-      // Highlight connected edges
       circle.setAttribute('fill', hex2rgba(color, 0.45));
       setTimeout(() => circle.setAttribute('fill', hex2rgba(color, 0.18)), 1000);
       const conn = edges.filter(e=>e.from===n.id||e.to===n.id);
